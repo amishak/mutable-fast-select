@@ -4,7 +4,7 @@
 
     <groupId>com.github.terma</groupId>
     <artifactId>mutable-fast-select</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.7-SNAPSHOT</version>
 
     <name>Mutable Fast Select</name>
     <description>Mutable version of Fast Select</description>
@@ -210,7 +210,7 @@
         <developerConnection>scm:git:https://github.com/terma/mutable-fast-select.git</developerConnection>
         <connection>scm:git:https://github.com/terma/mutable-fast-select.git</connection>
         <url>https://github.com/terma/mutable-fast-select.git</url>
-        <tag>mutable-fast-select-0.0.6</tag>
+        <tag>HEAD</tag>
     </scm>
 
 </project>
