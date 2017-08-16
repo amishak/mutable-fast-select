@@ -166,7 +166,7 @@
     </distributionManagement>
 
     <scm>
-        <developerConnection>scm:git:https://github.com/terma/mutable-select.git</developerConnection>
+        <developerConnection>scm:git:https://github.com/terma/mutable-fast-select.git</developerConnection>
         <connection>scm:git:https://github.com/terma/mutable-fast-select.git</connection>
         <url>https://github.com/terma/mutable-fast-select.git</url>
         <tag>HEAD</tag>
