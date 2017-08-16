@@ -4,7 +4,7 @@
 
     <groupId>com.github.terma</groupId>
     <artifactId>mutable-fast-select</artifactId>
-    <version>0.0.5</version>
+    <version>0.0.6-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
@@ -181,7 +181,7 @@
         <developerConnection>scm:git:https://github.com/terma/mutable-fast-select.git</developerConnection>
         <connection>scm:git:https://github.com/terma/mutable-fast-select.git</connection>
         <url>https://github.com/terma/mutable-fast-select.git</url>
-        <tag>mutable-fast-select-0.0.5</tag>
+        <tag>HEAD</tag>
     </scm>
 
 </project>
