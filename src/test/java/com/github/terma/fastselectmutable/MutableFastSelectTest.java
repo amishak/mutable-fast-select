@@ -34,7 +34,7 @@ public class MutableFastSelectTest {
 
     @Before
     public void prepareFiles() throws IOException {
-        dir = Files.createTempDirectory("mutablefastselect").toFile();
+        dir = Files.createTempDirectory("mutable-fast-select").toFile();
         dir.deleteOnExit();
     }
 
@@ -51,7 +51,7 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false);
-        mutableFastSelect.update(new Updater<>(data1, data2));
+        mutableFastSelect.update(Updater.update(data1, data2));
 
         CatchSelector catchSelector = new CatchSelector();
         mutableFastSelect.select(catchSelector);
@@ -67,8 +67,8 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false);
-        mutableFastSelect.update(new Updater<>(data1, data2));
-        mutableFastSelect.update(new Deleter<Data>("1", "2"));
+        mutableFastSelect.update(Updater.update(data1, data2));
+        mutableFastSelect.update(Updater.<Data>delete("1", "2"));
 
         CatchSelector catchSelector = new CatchSelector();
         mutableFastSelect.select(catchSelector);
@@ -87,11 +87,11 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false);
-        mutableFastSelect.update(new Updater<>(data1, data2));
+        mutableFastSelect.update(Updater.update(data1, data2));
 
         data1.amount = 12;
         data2.amount = 13;
-        mutableFastSelect.update(new Updater<>(data1, data2));
+        mutableFastSelect.update(Updater.update(data1, data2));
 
         CatchSelector catchSelector = new CatchSelector();
         mutableFastSelect.select(catchSelector);
@@ -105,6 +105,29 @@ public class MutableFastSelectTest {
         Assert.assertEquals(2, catchSelector.positions.size());
     }
 
+    @Test
+    public void shouldFlushWhenReachCommitLogThreshold() throws IOException {
+        Data data1 = new Data();
+        data1.id = "1";
+        Data data2 = new Data();
+        data2.id = "2";
+
+        MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false, 0);
+        mutableFastSelect.update(Updater.update(data1, data2));
+
+//        CatchSelector catchSelector = new CatchSelector();
+//        mutableFastSelect.select(catchSelector);
+//        ByteData deleted = (ByteData) catchSelector.data.getColumnsByNames().get("deleted").data;
+//        LongData amountData = (LongData) catchSelector.data.getColumnsByNames().get("amount").data;
+//        Assert.assertEquals(4, catchSelector.data.size());
+//        Assert.assertEquals((byte) 1, deleted.get(0));
+//        Assert.assertEquals((byte) 1, deleted.get(1));
+//        Assert.assertEquals((long) 12, amountData.get(2));
+//        Assert.assertEquals((long) 13, amountData.get(3));
+//        Assert.assertEquals(2, catchSelector.positions.size());
+    }
+
+    @SuppressWarnings("WeakerAccess")
     private static class CatchSelector implements Selector<Data> {
 
         public FastSelect<Data> data;
@@ -117,6 +140,7 @@ public class MutableFastSelectTest {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static class Data implements Item {
 
         public byte deleted;

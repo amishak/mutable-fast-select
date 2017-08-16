@@ -16,12 +16,13 @@ limitations under the License.
 package com.github.terma.fastselectmutable;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -33,41 +34,19 @@ public class CommitLog<T> {
     private static final String FILENAME = "commit-log.bin";
 
     private final boolean useLog;
-    private final Kryo kryo = new Kryo();
     private final File file;
-    private FileChannel fileChannel;
+    private final Kryo kryo = new Kryo();
+    private final FileChannel fileChannel;
 
     public CommitLog(final File dir, final boolean useLog) {
         this.useLog = useLog;
-        this.file = new File(dir, FILENAME);
+        file = new File(dir, FILENAME);
         try {
-            fileChannel = new FileOutputStream(file).getChannel();
+            fileChannel = new FileOutputStream(file, true).getChannel();
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
         kryo.register(DeleteAndAdd.class);
-    }
-
-    public void write(List<DeleteAndAdd<T>> updates) {
-        try {
-            final long start = System.currentTimeMillis();
-            long s = 0;
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Output oos = new Output(baos);
-            for (DeleteAndAdd<T> update : updates) {
-                kryo.writeObject(oos, update);
-            }
-            oos.close();
-            byte[] array = baos.toByteArray();
-            s += array.length;
-            fileChannel.write(ByteBuffer.wrap(array));
-            fileChannel.force(false);
-            if (useLog)
-                LOGGER.info("write " + updates.size() + " as " + (s / 1024) + " kb in " + (System.currentTimeMillis() - start) + " msec");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public void write(DeleteAndAdd<T> update) {
@@ -89,14 +68,30 @@ public class CommitLog<T> {
 
     public void clear() {
         try {
-            fileChannel.position(0);
-        } catch (IOException e) {
+            fileChannel.truncate(0);
+            fileChannel.force(false);
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public Iterable<DeleteAndAdd<T>> load() {
-        return Collections.emptyList(); // todo
+        final List<DeleteAndAdd<T>> data = new ArrayList<>();
+        try (Input input = new Input(new BufferedInputStream(new FileInputStream(file)))) {
+            while (!input.eof()) {
+                data.add(kryo.readObject(input, DeleteAndAdd.class));
+            }
+        } catch (FileNotFoundException e) {
+            // no data
+        }
+        return data;
     }
 
+    public long size() {
+        try {
+            return fileChannel.size();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

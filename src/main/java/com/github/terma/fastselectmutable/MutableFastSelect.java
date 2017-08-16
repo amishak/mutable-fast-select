@@ -22,6 +22,7 @@ import com.github.terma.fastselect.data.StringData;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,69 +37,84 @@ import java.util.logging.Logger;
  * write changes to commit log
  * update data in ${@link FastSelect} and positions to keep data queryable
  */
+@SuppressWarnings("WeakerAccess")
 @ThreadSafe
 public class MutableFastSelect<T extends Item> {
 
     private static final Logger LOGGER = Logger.getAnonymousLogger();
 
+    private static final long COMMIT_LOG_THRESHOLD = 10 * 1024 * 1024;
+    private static final int LOAD_THREADS = 5;
+
     private static final String DATA_FILENAME = "data.bin";
 
+    private final long commitLogThreshold;
     private final boolean useLog;
+
     private final Map<String, List<Integer>> positions;
     private final CommitLog<T> commitLog;
     private final FastSelect<T> data;
-    private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-    private final File dir;
     private final File dataFile;
+
     private final ByteData deletedData;
     private final StringData idData;
 
+    private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private final Lock r = readWriteLock.readLock();
+    private final Lock w = readWriteLock.writeLock();
+
     public MutableFastSelect(Class<T> clazz, final File dir, final boolean useLog) {
+        this(clazz, dir, useLog, COMMIT_LOG_THRESHOLD);
+    }
+
+    /**
+     * @param clazz              - data class
+     * @param dir                - directory where commit log and data file will be stored
+     * @param useLog             - enable logging
+     * @param commitLogThreshold - max size of {@link CommitLog} in bytes before it it
+     *                           will be flushed to {@link FastSelect#save(FileChannel)}
+     */
+    public MutableFastSelect(Class<T> clazz, final File dir, final boolean useLog, final long commitLogThreshold) {
+        this.commitLogThreshold = commitLogThreshold;
         this.useLog = useLog;
-        this.dir = dir;
         this.dataFile = new File(dir, DATA_FILENAME);
 
         // load data to fast-select
         positions = new HashMap<>();
         data = new FastSelectBuilder<>(clazz).create();
-        deletedData = getDeletedData();
-        idData = getIdData();
 
-        try {
-            data.load(new FileInputStream(dataFile).getChannel(), 5);
+        final FastSelect.Column deleteColumn = data.getColumnsByNames().get("deleted");
+        if (deleteColumn == null)
+            throw new IllegalArgumentException("Data object doesn't have 'deleted' column, only: " + data.getColumns());
+        deletedData = (ByteData) deleteColumn.data;
+
+        final FastSelect.Column idColumn = data.getColumnsByNames().get("id");
+        if (idColumn == null)
+            throw new IllegalArgumentException("Data object doesn't have 'id' column, only: " + data.getColumns());
+        idData = (StringData) idColumn.data;
+
+        try (final FileChannel fileChannel = new FileInputStream(dataFile).getChannel()) {
+            data.load(fileChannel, LOAD_THREADS);
         } catch (FileNotFoundException e) {
             // ok, just no data to restore
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        buildPositions();
+
+        // build positions map
+        for (int i = 0; i < idData.size(); i++) {
+            String id = (String) idData.get(i);
+            List<Integer> pos = positions.get(id);
+            if (pos == null) {
+                pos = new ArrayList<>();
+                positions.put(id, pos);
+            }
+            pos.add(i);
+        }
 
         // update data with commit log if any
         commitLog = new CommitLog<>(dir, useLog);
-        updateDataByCommitLog();
-
-        // todo now we can start to work
-//        Thread thread = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    while (true) {
-//                        Thread.sleep(TimeUnit.MINUTES.toMillis(5));
-//                        flush();
-//                    }
-//                } catch (InterruptedException e) {
-//                    // that's ok just stop thread
-//                }
-//            }
-//        });
-//        thread.setDaemon(true);
-//        thread.start();
-    }
-
-    private void updateDataByCommitLog() {
-        for (final DeleteAndAdd<T> deleteAndAdd : commitLog.load()) {
-            update(deleteAndAdd);
-        }
+        for (final DeleteAndAdd<T> deleteAndAdd : commitLog.load()) update(deleteAndAdd);
         commitLog.clear();
     }
 
@@ -123,81 +139,40 @@ public class MutableFastSelect<T extends Item> {
         data.addAll(deleteAndAdd.add);
     }
 
-    private ByteData getDeletedData() {
-        FastSelect.Column column = data.getColumnsByNames().get("deleted");
-        if (column == null)
-            throw new IllegalArgumentException("Data object doesn't have 'deleted' column, only: " + data.getColumns());
-        return (ByteData) column.data;
-    }
-
-    private StringData getIdData() {
-        FastSelect.Column column = data.getColumnsByNames().get("id");
-        if (column == null)
-            throw new IllegalArgumentException("Data object doesn't have 'id' column, only: " + data.getColumns());
-        return (StringData) column.data;
-    }
-
-    private void buildPositions() {
-        // todo impl
-    }
-
     public void select(final Selector<T> selector) {
         final long start = System.currentTimeMillis();
-        final Lock lock = readWriteLock.readLock();
-        lock.lock();
+        r.lock();
         try {
             selector.execute(data, positions);
         } finally {
-            lock.unlock();
+            r.unlock();
         }
         if (useLog) LOGGER.info("select in " + (System.currentTimeMillis() - start) + " msec");
     }
 
-    public void update(List<Modifier<T>> modifiers) {
+    public void update(final Modifier<T> modifier) {
         final long start = System.currentTimeMillis();
-        final Lock lock = readWriteLock.writeLock();
-        lock.lock();
-        try {
-            DeleteAndAdd<T> deleteAndAdd = new DeleteAndAdd<>(new ArrayList<Integer>(), new ArrayList<T>());
-            for (Modifier<T> modifier : modifiers) {
-                modifier.execute(deleteAndAdd, data, positions);
-            }
-            commitLog.write(deleteAndAdd);
-            update(deleteAndAdd);
-        } finally {
-            lock.unlock();
-        }
-        if (useLog) LOGGER.info("update in " + (System.currentTimeMillis() - start) + " msec");
-    }
-
-    public void update(Modifier<T> modifier) {
-        final long start = System.currentTimeMillis();
-        final Lock lock = readWriteLock.writeLock();
-        lock.lock();
+        w.lock();
         try {
             DeleteAndAdd<T> deleteAndAdd = new DeleteAndAdd<>(new ArrayList<Integer>(), new ArrayList<T>());
             modifier.execute(deleteAndAdd, data, positions);
             commitLog.write(deleteAndAdd);
             update(deleteAndAdd);
+
+            if (commitLog.size() > commitLogThreshold) flushCommitLog();
         } finally {
-            lock.unlock();
+            w.unlock();
         }
         if (useLog) LOGGER.info("update in " + (System.currentTimeMillis() - start) + " msec");
     }
 
-    protected void flush() {
-        final Lock lock = readWriteLock.writeLock();
-        lock.lock();
-        try {
-            try {
-                data.save(new FileOutputStream(dataFile).getChannel());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            commitLog.clear();
-        } finally {
-            lock.unlock();
+    private void flushCommitLog() {
+        try (final FileChannel fileChannel = new RandomAccessFile(dataFile, "rw").getChannel()) {
+            data.save(fileChannel);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+        commitLog.clear();
     }
 
 }

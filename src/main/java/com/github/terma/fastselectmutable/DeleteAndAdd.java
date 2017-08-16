@@ -16,14 +16,26 @@ limitations under the License.
 package com.github.terma.fastselectmutable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DeleteAndAdd<T> implements Serializable {
+
     public final List<Integer> delete;
     public final List<T> add;
 
     public DeleteAndAdd(List<Integer> delete, List<T> add) {
-        this.delete = delete;
-        this.add = add;
+        this.delete = new ArrayList<>(delete);
+        this.add = new ArrayList<>(add);
     }
+
+    /**
+     * only for {@link com.esotericsoftware.kryo.Kryo}
+     */
+    private DeleteAndAdd() {
+        delete = Collections.emptyList();
+        add = Collections.emptyList();
+    }
+
 }

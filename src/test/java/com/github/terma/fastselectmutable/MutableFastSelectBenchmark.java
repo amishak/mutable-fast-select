@@ -68,7 +68,7 @@ import java.util.concurrent.TimeUnit;
  * MutableFastSelectBenchmark.add         1  thrpt       3441.980          ops/s
  * MutableFastSelectBenchmark.add       100  thrpt         93.655          ops/s
  *
- * Same and optimize {@link CommitLog#write(List)}
+ * Same and optimize for bulk write to {@link CommitLog}
  * Benchmark                       (volume)   Mode  Cnt     Score   Error  Units
  * MutableFastSelectBenchmark.add         1  thrpt       3391.210          ops/s
  * MutableFastSelectBenchmark.add       100  thrpt         98.496          ops/s
@@ -79,7 +79,7 @@ import java.util.concurrent.TimeUnit;
  * MutableFastSelectBenchmark.add         1   avgt         ≈ 10⁻⁴           s/op
  * MutableFastSelectBenchmark.add       100   avgt          0.010           s/op
  *
- * Use {@link ModifierImpl}
+ * Use {@link Updater}
  * Benchmark                       (volume)   Mode  Cnt     Score   Error  Units
  * MutableFastSelectBenchmark.add         1  thrpt       3523.890          ops/s
  * MutableFastSelectBenchmark.add       100  thrpt        239.273          ops/s
@@ -89,6 +89,15 @@ import java.util.concurrent.TimeUnit;
  * MutableFastSelectBenchmark.add      1000   avgt          0.041           s/op
  *
  * 25k/sec = 1.5m/min = 15m/10min
+ *
+ * With saving of fast-select and commit log flush
+ * Benchmark                       (batch)  (commitLogThreshold)   Mode  Cnt     Score   Error  Units
+ * MutableFastSelectBenchmark.add        1               1000000  thrpt       2385.185          ops/s
+ * MutableFastSelectBenchmark.add        1              10000000  thrpt       2468.029          ops/s
+ * MutableFastSelectBenchmark.add      100               1000000  thrpt         60.065          ops/s
+ * MutableFastSelectBenchmark.add      100              10000000  thrpt         89.451          ops/s
+ * MutableFastSelectBenchmark.add     1000               1000000  thrpt          6.118          ops/s
+ * MutableFastSelectBenchmark.add     1000              10000000  thrpt          8.572          ops/s
  * </pre>
  */
 @Fork(value = 1, jvmArgs = {"-Xmx2g", "-XX:CompileThreshold=1"})
@@ -101,6 +110,9 @@ public class MutableFastSelectBenchmark {
 
     @Param({"1", "100", "1000"})
     private int batch;
+
+    @Param({"1000000", "10000000"})
+    private int commitLogThreshold;
 
     private Random random = new Random();
 
@@ -116,7 +128,7 @@ public class MutableFastSelectBenchmark {
     public void setup() throws IOException {
         final File dir = Files.createTempDirectory("mutable-fast-select-benchmark").toFile();
         dir.deleteOnExit();
-        mutableFastSelect = new MutableFastSelect<>(Data100Fields.class, dir, false);
+        mutableFastSelect = new MutableFastSelect<>(Data100Fields.class, dir, false, commitLogThreshold);
 
         for (int i = 0; i < batch; i++) {
             Data100Fields data = new Data100Fields();
@@ -158,7 +170,7 @@ public class MutableFastSelectBenchmark {
 
     @Benchmark
     public Object add() throws Exception {
-        mutableFastSelect.update(new ModifierImpl<>(Collections.<String>emptyList(), batchData));
+        mutableFastSelect.update(new Updater<>(Collections.<String>emptyList(), batchData));
         return mutableFastSelect;
     }
 
