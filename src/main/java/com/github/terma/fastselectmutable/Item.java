@@ -19,6 +19,10 @@ import java.io.Serializable;
 
 public interface Item extends Serializable {
 
-    String getId();
+    /**
+     * @return - should provide good implementation of {@link Object#hashCode()} and {@link Object#equals(Object)}
+     * because value will be used as key for example in {@link java.util.HashMap}
+     */
+    Object getId();
 
 }

@@ -51,7 +51,7 @@ public class MutableFastSelect<T extends Item> {
     private final long commitLogThreshold;
     private final boolean useLog;
 
-    private final Map<String, List<Integer>> positions;
+    private final Map<Object, List<Integer>> positions;
     private final CommitLog<T> commitLog;
     private final FastSelect<T> data;
     private final File dataFile;
@@ -127,7 +127,7 @@ public class MutableFastSelect<T extends Item> {
 
         int i = data.size();
         for (final T obj : deleteAndAdd.add) {
-            final String id = obj.getId();
+            final Object id = obj.getId();
             List<Integer> pos = positions.get(id);
             if (pos == null) {
                 pos = new ArrayList<>();

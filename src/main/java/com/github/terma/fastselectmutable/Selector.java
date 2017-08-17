@@ -22,6 +22,6 @@ import java.util.Map;
 
 public interface Selector<T> {
 
-    void execute(FastSelect<T> data, Map<String, List<Integer>> positions);
+    void execute(FastSelect<T> data, Map<Object, List<Integer>> positions);
 
 }

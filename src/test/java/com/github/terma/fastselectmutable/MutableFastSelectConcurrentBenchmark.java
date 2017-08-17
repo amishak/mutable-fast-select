@@ -186,7 +186,7 @@ public class MutableFastSelectConcurrentBenchmark {
     public void mixedSelect(final Blackhole blackhole) throws Exception {
         mutableFastSelect.select(new Selector<Data100Fields>() {
             @Override
-            public void execute(FastSelect<Data100Fields> data, Map<String, List<Integer>> positions) {
+            public void execute(FastSelect<Data100Fields> data, Map<Object, List<Integer>> positions) {
                 data.select(new Request[]{new ByteRequest("deleted", 0)}, new ArrayLayoutCallback() {
                     @Override
                     public void data(int position) {
@@ -203,7 +203,7 @@ public class MutableFastSelectConcurrentBenchmark {
     public void readonlySelect(final Blackhole blackhole) throws Exception {
         mutableFastSelect.select(new Selector<Data100Fields>() {
             @Override
-            public void execute(FastSelect<Data100Fields> data, Map<String, List<Integer>> positions) {
+            public void execute(FastSelect<Data100Fields> data, Map<Object, List<Integer>> positions) {
                 data.select(new Request[]{new ByteRequest("deleted", 0)}, new ArrayLayoutCallback() {
                     @Override
                     public void data(int position) {

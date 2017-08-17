@@ -47,7 +47,7 @@ public class Updater<T extends Item> implements Modifier<T> {
     }
 
     @Override
-    public void execute(final DeleteAndAdd<T> acc, final FastSelect data, final Map<String, List<Integer>> positions) {
+    public void execute(final DeleteAndAdd<T> acc, final FastSelect data, final Map<Object, List<Integer>> positions) {
         for (T i : updates) {
             List<Integer> list = positions.get(i.getId());
             if (list != null) acc.delete.addAll(list);

@@ -131,10 +131,10 @@ public class MutableFastSelectTest {
     private static class CatchSelector implements Selector<Data> {
 
         public FastSelect<Data> data;
-        public Map<String, List<Integer>> positions;
+        public Map<Object, List<Integer>> positions;
 
         @Override
-        public void execute(FastSelect<Data> data, Map<String, List<Integer>> positions) {
+        public void execute(FastSelect<Data> data, Map<Object, List<Integer>> positions) {
             this.data = data;
             this.positions = positions;
         }
@@ -148,7 +148,7 @@ public class MutableFastSelectTest {
         public long amount;
 
         @Override
-        public String getId() {
+        public Object getId() {
             return id;
         }
     }

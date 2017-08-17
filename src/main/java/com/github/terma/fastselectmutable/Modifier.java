@@ -23,6 +23,6 @@ import java.util.Map;
 
 public interface Modifier<T extends Item> extends Serializable {
 
-    void execute(DeleteAndAdd<T> acc, FastSelect data, Map<String, List<Integer>> positions);
+    void execute(DeleteAndAdd<T> acc, FastSelect data, Map<Object, List<Integer>> positions);
 
 }
