@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 /**
  * update to data
  * write changes to commit log
- * update data in ${@link FastSelect} and positions to keep data queryable
+ * update data in ${@link com.github.terma.fastselect.FastSelect} and positions to keep data queryable
  */
 @SuppressWarnings("WeakerAccess")
 @ThreadSafe
@@ -114,11 +114,11 @@ public class MutableFastSelect<T extends Item> {
 
         // update data with commit log if any
         commitLog = new CommitLog<>(dir, useLog);
-        for (final DeleteAndAdd<T> deleteAndAdd : commitLog.load()) update(deleteAndAdd);
+        for (final DeleteAndAdd<T> deleteAndAdd : commitLog.load()) modify(deleteAndAdd);
         commitLog.clear();
     }
 
-    private void update(DeleteAndAdd<T> deleteAndAdd) {
+    private void modify(DeleteAndAdd<T> deleteAndAdd) {
         for (final Integer pos : deleteAndAdd.delete) {
             deletedData.data[pos] = 1;
             String id = (String) idData.get(pos);
@@ -150,20 +150,20 @@ public class MutableFastSelect<T extends Item> {
         if (useLog) LOGGER.info("select in " + (System.currentTimeMillis() - start) + " msec");
     }
 
-    public void update(final Modifier<T> modifier) {
+    public void modify(final Modifier<T> modifier) {
         final long start = System.currentTimeMillis();
         w.lock();
         try {
             DeleteAndAdd<T> deleteAndAdd = new DeleteAndAdd<>(new ArrayList<Integer>(), new ArrayList<T>());
             modifier.execute(deleteAndAdd, data, positions);
             commitLog.write(deleteAndAdd);
-            update(deleteAndAdd);
+            modify(deleteAndAdd);
 
             if (commitLog.size() > commitLogThreshold) flushCommitLog();
         } finally {
             w.unlock();
         }
-        if (useLog) LOGGER.info("update in " + (System.currentTimeMillis() - start) + " msec");
+        if (useLog) LOGGER.info("modify in " + (System.currentTimeMillis() - start) + " msec");
     }
 
     private void flushCommitLog() {

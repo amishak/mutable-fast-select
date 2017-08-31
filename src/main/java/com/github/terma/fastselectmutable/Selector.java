@@ -20,6 +20,11 @@ import com.github.terma.fastselect.FastSelect;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @param <T>
+ * @see Modifier
+ * @see MutableFastSelect
+ */
 public interface Selector<T> {
 
     void execute(FastSelect<T> data, Map<Object, List<Integer>> positions);

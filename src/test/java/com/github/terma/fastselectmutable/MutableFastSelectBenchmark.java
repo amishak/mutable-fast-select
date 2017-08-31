@@ -170,7 +170,7 @@ public class MutableFastSelectBenchmark {
 
     @Benchmark
     public Object add() throws Exception {
-        mutableFastSelect.update(new Updater<>(Collections.<String>emptyList(), batchData));
+        mutableFastSelect.modify(new Updater<>(Collections.<String>emptyList(), batchData));
         return mutableFastSelect;
     }
 

@@ -51,7 +51,7 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false);
-        mutableFastSelect.update(Updater.update(data1, data2));
+        mutableFastSelect.modify(Updater.update(data1, data2));
 
         CatchSelector catchSelector = new CatchSelector();
         mutableFastSelect.select(catchSelector);
@@ -67,8 +67,8 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false);
-        mutableFastSelect.update(Updater.update(data1, data2));
-        mutableFastSelect.update(Updater.<Data>delete("1", "2"));
+        mutableFastSelect.modify(Updater.update(data1, data2));
+        mutableFastSelect.modify(Updater.<Data>delete("1", "2"));
 
         CatchSelector catchSelector = new CatchSelector();
         mutableFastSelect.select(catchSelector);
@@ -87,11 +87,11 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false);
-        mutableFastSelect.update(Updater.update(data1, data2));
+        mutableFastSelect.modify(Updater.update(data1, data2));
 
         data1.amount = 12;
         data2.amount = 13;
-        mutableFastSelect.update(Updater.update(data1, data2));
+        mutableFastSelect.modify(Updater.update(data1, data2));
 
         CatchSelector catchSelector = new CatchSelector();
         mutableFastSelect.select(catchSelector);
@@ -113,7 +113,7 @@ public class MutableFastSelectTest {
         data2.id = "2";
 
         MutableFastSelect<Data> mutableFastSelect = new MutableFastSelect<>(Data.class, dir, false, 0);
-        mutableFastSelect.update(Updater.update(data1, data2));
+        mutableFastSelect.modify(Updater.update(data1, data2));
 
 //        CatchSelector catchSelector = new CatchSelector();
 //        mutableFastSelect.select(catchSelector);

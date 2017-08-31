@@ -26,6 +26,8 @@ import java.util.Map;
  * Basic implementation of {@link Modifier} to add, delete or update data in {@link MutableFastSelect}
  *
  * @param <T>
+ * @see Selector
+ * @see MutableFastSelect
  */
 @SuppressWarnings("WeakerAccess")
 public class Updater<T extends Item> implements Modifier<T> {

@@ -124,12 +124,12 @@ public class MutableFastSelectConcurrentBenchmark {
             data.amount = random.nextLong();
             init.add(data);
             if (init.size() > 10000) {
-                mutableFastSelect.update(new Updater<>(Collections.<String>emptyList(), init));
+                mutableFastSelect.modify(new Updater<>(Collections.<String>emptyList(), init));
                 init.clear();
             }
         }
         if (init.size() > 0) {
-            mutableFastSelect.update(new Updater<>(Collections.<String>emptyList(), init));
+            mutableFastSelect.modify(new Updater<>(Collections.<String>emptyList(), init));
             init.clear();
         }
 
@@ -176,7 +176,7 @@ public class MutableFastSelectConcurrentBenchmark {
     @Group("mixed")
     @Benchmark
     public Object mixedAdd() throws Exception {
-        mutableFastSelect.update(new Updater<>(Collections.<String>emptyList(), batchData));
+        mutableFastSelect.modify(new Updater<>(Collections.<String>emptyList(), batchData));
         return mutableFastSelect;
     }
 
