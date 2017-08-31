@@ -2,4 +2,4 @@ language: java
 
 install: true
 
-script: mvn package
+script: mvn package jacoco:report coveralls:report
